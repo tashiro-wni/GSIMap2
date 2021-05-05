@@ -1,0 +1,32 @@
+name: GSIMap2
+options:
+  deploymentTarget:
+    iOS: "14.0"
+  bundleIdPrefix: com.example
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: 97JN7SJ3KH
+
+targets:
+  GSIMap2:
+    type: application
+    platform: iOS
+    sources:
+      - GSIMap2
+
+#  GSIMap2Tests:
+#    type: bundle.unit-test
+#    platform: iOS
+#    sources:
+#      - GSIMap2Tests
+#    dependencies:
+#      - target: GSIMap2
+#
+#  GSIMap2UITests:
+#    type: bundle.ui-testing
+#    platform: iOS
+#    sources:
+#      - GSIMap2UITests
+#    dependencies:
+#      - target:	GSIMap2
