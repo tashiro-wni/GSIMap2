@@ -9,6 +9,8 @@ import SwiftUI
 import MapKit
 
 struct MapView: UIViewRepresentable {
+    @Binding var zoomLevel: Int
+    
     typealias UIViewType = MKMapView
     let mapView = MKMapView()
 
@@ -20,8 +22,6 @@ struct MapView: UIViewRepresentable {
         mapView.isRotateEnabled = false
         mapView.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 35.681, longitude: 139.767),
                                             span: MKCoordinateSpan(latitudeDelta: 1.0, longitudeDelta: 1.0))
-        context.coordinator.registerAnnotationViews()
-        
         return mapView
     }
     
@@ -39,37 +39,67 @@ struct MapView: UIViewRepresentable {
     // https://github.com/vvvegesna/MeetupReminder
     final class Coordinator: NSObject, MKMapViewDelegate {
         private let parent: MapView
-        private var annotations: [MKAnnotation] = []
-        
+        private var tileOverlays: [MKOverlay] = []
+        private var overlayType: GSITile = .photo {
+            didSet {
+                parent.mapView.removeOverlays(tileOverlays)
+                parent.mapView.addOverlay(overlayType.tileOverlay)
+                tileOverlays = [overlayType.tileOverlay]
+                
+                if parent.mapView.zoomLevel > overlayType.maxZoomLevel {
+                    parent.mapView.zoomLevel = overlayType.maxZoomLevel
+                }
+                if parent.mapView.zoomLevel < overlayType.minZoomLevel {
+                    parent.mapView.zoomLevel = overlayType.minZoomLevel
+                }
+            }
+        }
+
         init(_ parent: MapView) {
             self.parent = parent
             super.init()
+            
+            parent.mapView.addOverlay(overlayType.tileOverlay)
+            tileOverlays = [ overlayType.tileOverlay ]
         }
         
-        func registerAnnotationViews() {
-//            for identifier in AmedasData.allIdentifiers {
-//                parent.mapView.register(AmedasAnnotationView.self, forAnnotationViewWithReuseIdentifier: identifier)
-//            }
+        func zoomInAction(_ sender: Any?) {
+            guard parent.mapView.zoomLevel < overlayType.maxZoomLevel else { return }
+            parent.mapView.zoomLevel += 1
         }
         
-//        func updateAnnotations(viewModel: AmedasMapViewModel) {
-//            parent.mapView.removeAnnotations(annotations)
-//            annotations.removeAll()
-//
-//            for data in viewModel.amedasData {
-//                if let point = viewModel.amedasPoints[data.pointID], data.hasValidData(for: parent.viewModel.displayElement) {
-//                    annotations.append(AmedasAnnotation(point: point, data: data, element: parent.viewModel.displayElement))
-//                }
-//            }
-//            LOG(#function + ", \(viewModel.dateText), \(parent.viewModel.displayElement), plot \(annotations.count) points.")
-//            parent.mapView.addAnnotations(annotations)
-//            parent.mapView.setNeedsDisplay()
-//        }
+        func zoomOutAction(_ sender: Any?) {
+            guard parent.mapView.zoomLevel > overlayType.minZoomLevel else { return }
+            parent.mapView.zoomLevel -= 1
+        }
+
+        func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
+            if parent.mapView.zoomLevel > overlayType.maxZoomLevel {
+                if overlayType == .photo {
+                    overlayType = .ortho
+                } else {
+                    parent.mapView.zoomLevel = overlayType.maxZoomLevel
+                }
+            }
+            if parent.mapView.zoomLevel < overlayType.minZoomLevel {
+                if overlayType == .ortho {
+                    overlayType = .photo
+                } else {
+                    parent.mapView.zoomLevel = overlayType.minZoomLevel
+                }
+            }
+
+            parent.zoomLevel = parent.mapView.zoomLevel
+        }
+        
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            MKTileOverlayRenderer(overlay: overlay)
+        }
     }
 }
 
-struct MapView_Previews: PreviewProvider {
-    static var previews: some View {
-        MapView()
-    }
-}
+//struct MapView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        MapView(zoomLevel: 15)
+//    }
+//}

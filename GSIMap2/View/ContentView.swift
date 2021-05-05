@@ -8,10 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State var zoomLevel: Int = 15
+    
     var body: some View {
         ZStack {
-            MapView()
+            MapView(zoomLevel: $zoomLevel)
                 .edgesIgnoringSafeArea(.all)
+            
+            Text(String(format: "zoomLevel: %d", zoomLevel))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         }
     }
 }
