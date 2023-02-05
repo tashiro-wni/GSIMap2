@@ -10,17 +10,17 @@ import MapKit
 
 // https://stackoverflow.com/questions/4189621/setting-the-zoom-level-for-a-mkmapview
 extension MKMapView {
-    var zoomLevel: Int {
+    var zoomLevel: Double {
         get {
-            Int(log2(360 * (Double(frame.width / 256) / region.span.longitudeDelta)) + 1)
+            log2(360 * (Double(frame.width / 256) / region.span.longitudeDelta)) + 1
         }
         set {
             setCenter(coordinate: centerCoordinate, zoomLevel: newValue, animated: false)
         }
     }
     
-    private func setCenter(coordinate: CLLocationCoordinate2D, zoomLevel: Int, animated: Bool) {
-        let span = MKCoordinateSpan(latitudeDelta: 0, longitudeDelta: 360 / pow(2, Double(zoomLevel)) * Double(frame.width) / 256)
+    private func setCenter(coordinate: CLLocationCoordinate2D, zoomLevel: Double, animated: Bool) {
+        let span = MKCoordinateSpan(latitudeDelta: 0, longitudeDelta: 360 / pow(2, zoomLevel) * Double(frame.width) / 256)
         setRegion(MKCoordinateRegion(center: coordinate, span: span), animated: animated)
     }
 }

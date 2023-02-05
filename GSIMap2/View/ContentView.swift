@@ -8,15 +8,15 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State var zoomLevel: Int = 5
-    @State var overlayType: GSITile = .satirFD("20230205083000")
+    @State var zoomLevel: Double = 6.5
+    @State var overlayType: GSITile = .satirJP("20230205083000")
     
     var body: some View {
         ZStack {
             MapView(zoomLevel: $zoomLevel, overlayType: $overlayType)
                 .edgesIgnoringSafeArea(.all)
             
-            Text(String(format: "zoomLevel: %d", zoomLevel))
+            Text(String(format: "zoomLevel: %.2f", zoomLevel))
                 .font(.title)
                 .foregroundColor(.red)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
