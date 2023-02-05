@@ -14,8 +14,8 @@ extension MKMapView {
         get {
             Int(log2(360 * (Double(frame.width / 256) / region.span.longitudeDelta)) + 1)
         }
-        set (newZoomLevel) {
-            setCenter(coordinate: centerCoordinate, zoomLevel: newZoomLevel, animated: false)
+        set {
+            setCenter(coordinate: centerCoordinate, zoomLevel: newValue, animated: false)
         }
     }
     

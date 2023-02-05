@@ -10,6 +10,7 @@ import MapKit
 
 struct MapView: UIViewRepresentable {
     @Binding var zoomLevel: Int
+    @Binding var overlayType: GSITile
     
     typealias UIViewType = MKMapView
     let mapView = MKMapView()
@@ -31,7 +32,7 @@ struct MapView: UIViewRepresentable {
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        Coordinator(self, overlayType: overlayType)
     }
 
     // MARK: - Coordinator
@@ -40,23 +41,19 @@ struct MapView: UIViewRepresentable {
     final class Coordinator: NSObject, MKMapViewDelegate {
         private let parent: MapView
         private var tileOverlays: [MKOverlay] = []
-        private var overlayType: GSITile = .photo {
+        private var overlayType: GSITile {
             didSet {
                 parent.mapView.removeOverlays(tileOverlays)
                 parent.mapView.addOverlay(overlayType.tileOverlay)
                 tileOverlays = [overlayType.tileOverlay]
                 
-                if parent.mapView.zoomLevel > overlayType.maxZoomLevel {
-                    parent.mapView.zoomLevel = overlayType.maxZoomLevel
-                }
-                if parent.mapView.zoomLevel < overlayType.minZoomLevel {
-                    parent.mapView.zoomLevel = overlayType.minZoomLevel
-                }
+                parent.mapView.zoomLevel = min(max(parent.mapView.zoomLevel, overlayType.minZoomLevel), overlayType.maxZoomLevel)
             }
         }
 
-        init(_ parent: MapView) {
+        init(_ parent: MapView, overlayType: GSITile) {
             self.parent = parent
+            self.overlayType = overlayType
             super.init()
             
             parent.mapView.addOverlay(overlayType.tileOverlay)
@@ -75,14 +72,14 @@ struct MapView: UIViewRepresentable {
 
         func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
             if parent.mapView.zoomLevel > overlayType.maxZoomLevel {
-                if overlayType == .photo {
+                if case .photo = overlayType {
                     overlayType = .ortho
                 } else {
                     parent.mapView.zoomLevel = overlayType.maxZoomLevel
                 }
             }
             if parent.mapView.zoomLevel < overlayType.minZoomLevel {
-                if overlayType == .ortho {
+                if case .ortho = overlayType {
                     overlayType = .photo
                 } else {
                     parent.mapView.zoomLevel = overlayType.minZoomLevel

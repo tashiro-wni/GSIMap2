@@ -18,9 +18,11 @@ enum GSITile {
     case relief        // 色別標高図　　　　　　　　zoomLevel 5-15
     case hillShade     // 陰影起伏図　　　　　　　　zoomLevel 2-16
     case floodControl  // 治水地形分類図　　　　　　zoomLevel 11-16
-    
-    var tileOverlay: MKTileOverlay {
-        let overlay = MKTileOverlay(urlTemplate: urlTemplate)
+    case satirJP(String) // ひまわり赤外線画像     zoomLevel 6
+    case satirFD(String) // ひまわり赤外線画像     zoomLevel 3-5
+
+    var tileOverlay: CustomTileOverlay {
+        let overlay = CustomTileOverlay(urlTemplate: urlTemplate)
         overlay.minimumZ = minZoomLevel
         overlay.maximumZ = maxZoomLevel
         //overlay.canReplaceMapContent = true
@@ -28,27 +30,36 @@ enum GSITile {
     }
     
     var urlTemplate: String {
-        let baseUrl = "https://cyberjapandata.gsi.go.jp/xyz"
+        let gsiBaseUrl = "https://cyberjapandata.gsi.go.jp/xyz"  // 国土地理院
+        let jmaBaseUrl = "https://www.jma.go.jp/bosai/himawari/data"  // 気象庁
         
         switch self {
         case .standard:
-            return baseUrl + "/std/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/std/{z}/{x}/{y}.png"
         case .pale:
-            return baseUrl + "/pale/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/pale/{z}/{x}/{y}.png"
         case .english:
-            return baseUrl + "/english/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/english/{z}/{x}/{y}.png"
         case .lcm25k:
-            return baseUrl + "/lcm25k_2012/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/lcm25k_2012/{z}/{x}/{y}.png"
         case .photo:
-            return baseUrl + "/seamlessphoto/{z}/{x}/{y}.jpg"
+            return gsiBaseUrl + "/seamlessphoto/{z}/{x}/{y}.jpg"
         case .ortho:
-            return baseUrl + "/ort/{z}/{x}/{y}.jpg"
+            return gsiBaseUrl + "/ort/{z}/{x}/{y}.jpg"
         case .relief:
-            return baseUrl + "/relief/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/relief/{z}/{x}/{y}.png"
         case .hillShade:
-            return baseUrl + "/hillshademap/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/hillshademap/{z}/{x}/{y}.png"
         case .floodControl:
-            return baseUrl + "/lcmfc2/{z}/{x}/{y}.png"
+            return gsiBaseUrl + "/lcmfc2/{z}/{x}/{y}.png"
+        case .satirJP(let basetime):
+            let band = "B13"
+            let prod = "TBB"
+            return jmaBaseUrl + "/satimg/\(basetime)/jp/\(basetime)/\(band)/\(prod)/{z}/{x}/{y}.jpg"
+        case .satirFD(let basetime):
+            let band = "B13"
+            let prod = "TBB"
+            return jmaBaseUrl + "/satimg/\(basetime)/fd/\(basetime)/\(band)/\(prod)/{z}/{x}/{y}.jpg"
         }
     }
     
@@ -70,6 +81,10 @@ enum GSITile {
             return 16
         case .floodControl:
             return 16
+        case .satirJP:
+            return 6
+        case .satirFD:
+            return 5
         }
     }
     
@@ -91,6 +106,10 @@ enum GSITile {
             return 2
         case .floodControl:
             return 11
+        case .satirJP:
+            return 6
+        case .satirFD:
+            return 3
         }
     }
 }
