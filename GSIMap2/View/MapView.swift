@@ -7,10 +7,10 @@
 
 import SwiftUI
 import MapKit
+import Combine
 
 struct MapView: UIViewRepresentable {
-    @Binding var zoomLevel: Double
-    @Binding var overlayType: GSITile
+    @ObservedObject var model: MapModel
     
     typealias UIViewType = MKMapView
     let mapView = MKMapView()
@@ -18,7 +18,7 @@ struct MapView: UIViewRepresentable {
     func makeUIView(context: Context) -> MKMapView {
         //LOG(#function)
         mapView.delegate = context.coordinator
-        mapView.mapType = .satellite
+        mapView.mapType = .mutedStandard
         mapView.isPitchEnabled = false
         mapView.isRotateEnabled = false
         mapView.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 35.681, longitude: 139.767),
@@ -27,12 +27,10 @@ struct MapView: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: MKMapView, context: Context) {
-        //LOG(#function)
-        //context.coordinator.updateAnnotations(viewModel: viewModel)
     }
     
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, overlayType: overlayType)
+        Coordinator(self)
     }
 
     // MARK: - Coordinator
@@ -40,24 +38,29 @@ struct MapView: UIViewRepresentable {
     // https://github.com/vvvegesna/MeetupReminder
     final class Coordinator: NSObject, MKMapViewDelegate {
         private let parent: MapView
-        private var tileOverlays: [MKOverlay] = []
-        private var overlayType: GSITile {
-            didSet {
-                parent.mapView.removeOverlays(tileOverlays)
-                parent.mapView.addOverlay(overlayType.tileOverlay)
-                tileOverlays = [overlayType.tileOverlay]
-                
-                parent.mapView.zoomLevel = min(max(parent.mapView.zoomLevel, Double(overlayType.minZoomLevel)), Double(overlayType.maxZoomLevel))
-            }
-        }
+        private var overlayType: GSITile { parent.model.overlayType }
+        private var tileOverlay: MKOverlay?
+        private var cancellables: Set<AnyCancellable> = []
 
-        init(_ parent: MapView, overlayType: GSITile) {
+        init(_ parent: MapView) {
             self.parent = parent
-            self.overlayType = overlayType
             super.init()
             
-            parent.mapView.addOverlay(overlayType.tileOverlay)
-            tileOverlays = [ overlayType.tileOverlay ]
+            parent.model.$selectedBasetime
+                .sink { [weak self] item in
+                    LOG("selectedBasetime updated")
+                    self?.selectedTimeUpdated(basetime: item?.basetime ?? "")
+                }
+                .store(in: &cancellables)
+        }
+        
+        private func selectedTimeUpdated(basetime: String) {
+            if let tileOverlay {
+                parent.mapView.removeOverlay(tileOverlay)
+            }
+            let newOverlay = overlayType.tileOverlay(basetime: basetime)
+            parent.mapView.addOverlay(newOverlay)
+            tileOverlay = newOverlay
         }
         
         func zoomInAction(_ sender: Any?) {
@@ -71,22 +74,22 @@ struct MapView: UIViewRepresentable {
         }
 
         func mapViewDidChangeVisibleRegion(_ mapView: MKMapView) {
-            if parent.mapView.zoomLevel > Double(overlayType.maxZoomLevel) + 0.99 {
-                if case .photo = overlayType {
-                    overlayType = .ortho
-                } else {
-                    parent.mapView.zoomLevel = Double(overlayType.maxZoomLevel)
-                }
-            }
-            if parent.mapView.zoomLevel < Double(overlayType.minZoomLevel) {
-                if case .ortho = overlayType {
-                    overlayType = .photo
-                } else {
-                    parent.mapView.zoomLevel = Double(overlayType.minZoomLevel)
-                }
-            }
+//            if parent.mapView.zoomLevel > Double(overlayType.maxZoomLevel) + 0.99 {
+//                if case .photo = overlayType {
+//                    overlayType = .ortho
+//                } else {
+//                    parent.mapView.zoomLevel = Double(overlayType.maxZoomLevel)
+//                }
+//            }
+//            if parent.mapView.zoomLevel < Double(overlayType.minZoomLevel) {
+//                if case .ortho = overlayType {
+//                    overlayType = .photo
+//                } else {
+//                    parent.mapView.zoomLevel = Double(overlayType.minZoomLevel)
+//                }
+//            }
 
-            parent.zoomLevel = parent.mapView.zoomLevel
+            parent.model.zoomLevel = parent.mapView.zoomLevel
         }
         
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {

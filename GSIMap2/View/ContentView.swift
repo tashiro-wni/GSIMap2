@@ -8,18 +8,26 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State var zoomLevel: Double = 6.5
-    @State var overlayType: GSITile = .satirJP("20230205083000")
+    @StateObject var model = MapModel()
     
     var body: some View {
         ZStack {
-            MapView(zoomLevel: $zoomLevel, overlayType: $overlayType)
+            MapView(model: model)
                 .edgesIgnoringSafeArea(.all)
             
-            Text(String(format: "zoomLevel: %.2f", zoomLevel))
-                .font(.title)
-                .foregroundColor(.red)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            VStack {
+                if model.timeList.count > 1 {
+                    Text(String(format: "%@ (%d)", model.selectedBasetime?.displayTime ?? "", model.selectedIndex))
+                        .font(.title)
+                        .foregroundColor(.red)
+                    Slider(value: $model.sliderPosition, in: 0 ... 1)
+                }
+                
+                Text(String(format: "zoomLevel: %.2f", model.zoomLevel))
+                    .font(.title)
+                    .foregroundColor(.red)
+            }
+            .frame(maxWidth: 300, maxHeight: .infinity, alignment: .bottom)
         }
     }
 }

@@ -6,7 +6,7 @@
 //  Copyright © 2020 tasshy. All rights reserved.
 //  国土地理院 タイル https://maps.gsi.go.jp/development/ichiran.html
 
-import MapKit
+import Foundation
 
 enum GSITile {
     case standard      // 標準地図　　　　　　　　　zoomLevel 5-18
@@ -18,48 +18,59 @@ enum GSITile {
     case relief        // 色別標高図　　　　　　　　zoomLevel 5-15
     case hillShade     // 陰影起伏図　　　　　　　　zoomLevel 2-16
     case floodControl  // 治水地形分類図　　　　　　zoomLevel 11-16
-    case satirJP(String) // ひまわり赤外線画像     zoomLevel 6
-    case satirFD(String) // ひまわり赤外線画像     zoomLevel 3-5
+    case satirJP       // ひまわり赤外線画像     zoomLevel 6
+    case satirFD       // ひまわり赤外線画像     zoomLevel 3-5
 
-    var tileOverlay: CustomTileOverlay {
-        let overlay = CustomTileOverlay(urlTemplate: urlTemplate)
+    func tileOverlay(basetime: String) -> CustomTileOverlay {
+        let overlay = CustomTileOverlay(urlTemplate: urlTemplate(basetime: basetime))
         overlay.minimumZ = minZoomLevel
         overlay.maximumZ = maxZoomLevel
         //overlay.canReplaceMapContent = true
         return overlay
     }
     
-    var urlTemplate: String {
-        let gsiBaseUrl = "https://cyberjapandata.gsi.go.jp/xyz"  // 国土地理院
-        let jmaBaseUrl = "https://www.jma.go.jp/bosai/himawari/data"  // 気象庁
-        
+    private static let gsiBaseUrl = "https://cyberjapandata.gsi.go.jp/xyz"  // 国土地理院
+    private static let jmaBaseUrl = "https://www.jma.go.jp/bosai/himawari/data"  // 気象庁
+
+    var timeListURL: URL? {
+        switch self {
+        case .satirJP:
+            return URL(string: Self.jmaBaseUrl + "/satimg/targetTimes_jp.json")
+        case .satirFD:
+            return URL(string: Self.jmaBaseUrl + "/satimg/targetTimes_fd.json")
+        default:
+            return nil
+        }
+    }
+    
+    func urlTemplate(basetime: String) -> String {
         switch self {
         case .standard:
-            return gsiBaseUrl + "/std/{z}/{x}/{y}.png"
+            return Self.gsiBaseUrl + "/std/{z}/{x}/{y}.png"
         case .pale:
-            return gsiBaseUrl + "/pale/{z}/{x}/{y}.png"
+            return Self.gsiBaseUrl + "/pale/{z}/{x}/{y}.png"
         case .english:
-            return gsiBaseUrl + "/english/{z}/{x}/{y}.png"
+            return Self.gsiBaseUrl + "/english/{z}/{x}/{y}.png"
         case .lcm25k:
-            return gsiBaseUrl + "/lcm25k_2012/{z}/{x}/{y}.png"
+            return Self.gsiBaseUrl + "/lcm25k_2012/{z}/{x}/{y}.png"
         case .photo:
-            return gsiBaseUrl + "/seamlessphoto/{z}/{x}/{y}.jpg"
+            return Self.gsiBaseUrl + "/seamlessphoto/{z}/{x}/{y}.jpg"
         case .ortho:
-            return gsiBaseUrl + "/ort/{z}/{x}/{y}.jpg"
+            return Self.gsiBaseUrl + "/ort/{z}/{x}/{y}.jpg"
         case .relief:
-            return gsiBaseUrl + "/relief/{z}/{x}/{y}.png"
+            return Self.gsiBaseUrl + "/relief/{z}/{x}/{y}.png"
         case .hillShade:
-            return gsiBaseUrl + "/hillshademap/{z}/{x}/{y}.png"
+            return Self.gsiBaseUrl + "/hillshademap/{z}/{x}/{y}.png"
         case .floodControl:
-            return gsiBaseUrl + "/lcmfc2/{z}/{x}/{y}.png"
-        case .satirJP(let basetime):
+            return Self.gsiBaseUrl + "/lcmfc2/{z}/{x}/{y}.png"
+        case .satirJP:
             let band = "B13"
             let prod = "TBB"
-            return jmaBaseUrl + "/satimg/\(basetime)/jp/\(basetime)/\(band)/\(prod)/{z}/{x}/{y}.jpg"
-        case .satirFD(let basetime):
+            return Self.jmaBaseUrl + "/satimg/\(basetime)/jp/\(basetime)/\(band)/\(prod)/{z}/{x}/{y}.jpg"
+        case .satirFD:
             let band = "B13"
             let prod = "TBB"
-            return jmaBaseUrl + "/satimg/\(basetime)/fd/\(basetime)/\(band)/\(prod)/{z}/{x}/{y}.jpg"
+            return Self.jmaBaseUrl + "/satimg/\(basetime)/fd/\(basetime)/\(band)/\(prod)/{z}/{x}/{y}.jpg"
         }
     }
     
